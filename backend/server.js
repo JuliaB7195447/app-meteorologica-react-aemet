@@ -15,22 +15,80 @@ app.use(express.json()); // Parsear JSON en el body de las peticiones
 // Ruta principal de bienvenida
 app.get('/', (req, res) => {
   res.json({
-    mensaje: 'API proyecto meteo conAEMET',
+    mensaje: 'API proyecto meteo con AEMET',
     endpoints: {
       '/api/tiempo/:codigoMunicipio': 'Prediccion diaria de un municipio'
     }
   });
 });
 
-// Ruta provisional para comprobar que recibe el código de municipio
-app.get('/api/tiempo/:codigoMunicipio', (req, res) => {
-  const { codigoMunicipio } = req.params;
+// Ruta recibe un código de municipio, consulta la API de AEMET,
+// simplifica la respuesta y devuelve solo los datos necesarios al frontend.
+app.get('/api/tiempo/:codigoMunicipio', async (req, res) => {
+  try {
+    const { codigoMunicipio } = req.params;
+    const apiKey = process.env.AEMET_API_KEY;
 
-  res.json({
-    success: true,
-    mensaje: 'Ruta de tiempo OK',
-    codigoMunicipio: codigoMunicipio
+    if (!apiKey) {
+      return res.status(500).json({
+        success: false,
+        error: 'No se ha encontrado la API key de AEMET'
+      });
+    }
+
+const urlAemet = `https://opendata.aemet.es/opendata/api/prediccion/especifica/municipio/diaria/${codigoMunicipio}?api_key=${apiKey}`;
+
+const respuestaAemet = await fetch(urlAemet);
+
+    if (!respuestaAemet.ok) {
+      throw new Error('Error al consultar AEMET');
+    }
+
+const datosRespuesta = await respuestaAemet.json();
+
+    if (!datosRespuesta.datos) {
+      return res.status(404).json({
+        success: false,
+        error: 'AEMET no ha devuelto datos para ese municipio'
+      });
+    }
+
+const respuestaDatos = await fetch(datosRespuesta.datos);
+const prediccion = await respuestaDatos.json();
+
+const datosMunicipio = prediccion[0];
+const dias = datosMunicipio.prediccion.dia;
+
+const prediccionSimplificada = dias.map((dia) => {
+  return {
+    fecha: dia.fecha,
+    estadoCielo: dia.estadoCielo[0]?.descripcion || 'Sin datos',
+    temperaturaMaxima: dia.temperatura.maxima,
+    temperaturaMinima: dia.temperatura.minima,
+    probPrecipitacion: dia.probPrecipitacion[0]?.value ?? 'Sin datos',
+    vientoDireccion: dia.viento[0]?.direccion || 'Sin datos',
+    vientoVelocidad: dia.viento[0]?.velocidad ?? 'Sin datos'
+  };
+});
+
+// saco solo los datos necesarios
+res.json({
+  success: true,
+  municipio: datosMunicipio.nombre,
+  provincia: datosMunicipio.provincia,
+  codigoMunicipio: codigoMunicipio,
+  prediccion: prediccionSimplificada
+});
+
+  } catch (error) {
+  console.error(error.message);
+
+  res.status(500).json({
+    success: false,
+    error: 'Error al obtener la predicción meteorológica',
+    detalles: error.message
   });
+}
 });
 
 // Ruta para manejar endpoints no encontrados
