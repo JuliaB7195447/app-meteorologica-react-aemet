@@ -3,17 +3,39 @@ import {useState} from 'react';
 function App(){
 
   const [codigoMunicipio, setCodigoMunicipio] = useState('30016');
-
   const [datosTiempo, setDatosTiempo] = useState(null);
+  const [cargando, setCargando] = useState(false);
+  const [error, setError] = useState('');
 
   //busca el tiempo del municipio llamando a backend
   const buscarTiempo = async (e) => {e.preventDefault();
-    
+
+  if(codigoMunicipio.trim() === ''){
+    setError('Introduce código de municipio');
+    setDatosTiempo(null);
+    return;
+  }
+
+  try{
+    setCargando(true);
+    setError('');
+    setDatosTiempo(null);
+      
   const respuesta = await fetch(`http://localhost:3000/api/tiempo/${codigoMunicipio}`);
   const datos = await respuesta.json();
   
+  if(!datos.success){
+    setError(datos.error || 'Datos no encontrados');
+    return;
+  }
+
   setDatosTiempo(datos);
-  };
+  }catch(error){
+    setError('No se ha podido conectar con el servidor');
+  }finally{
+    setCargando(false);
+  }
+};
 
   return(
     <>
@@ -29,27 +51,33 @@ function App(){
         <button type="submit">Buscar</button>
       </form>
 
-      {datosTiempo && !datosTiempo.success && (
-      <p>{datosTiempo.error}</p>
-)}
+      {cargando && <p>Cargando datos...</p>}
 
-      {datosTiempo && datosTiempo.success && (
+      {error && <p>{error}</p>}
+
+      {datosTiempo && (
         <section>
-          <h2>{datosTiempo.municipio}</h2>
-          <p>Provincia: {datosTiempo.provincia}</p>
+          <h2>
+            {datosTiempo.municipio} ({datosTiempo.provincia})
+          </h2>
 
-          <p>
-            Temperatura máxima: {datosTiempo.prediccion[0].temperaturaMaxima} ºC
-          </p>
-          <p>
-            Temperatura minima: {datosTiempo.prediccion[0].temperaturaMinima} ºC
-          </p>
-          <p>
-            Estado del cielo: {datosTiempo.prediccion[0].estadoCielo}
-          </p>
+          <h3>Predicción semanal</h3>
+
+          {datosTiempo.prediccion.map((dia, index) => (
+            <article key={index}>
+              <h4>{dia.fecha}</h4>
+
+              <p>Temperatura máxima: {dia.temperaturaMaxima} ºC</p>
+              <p>Temperatura mínima: {dia.temperaturaMinima} ºC</p>
+              <p>Estado del cielo: {dia.estadoCielo}</p>
+              <p>Probabilidad de lluvia: {dia.probPrecipitacion}%</p>
+              <p>Viento: {dia.vientoDireccion} - {dia.vientoVelocidad} km/h</p>
+            </article>
+          ))}
         </section>
       )}
     </>
   );
 }
+
 export default App;
