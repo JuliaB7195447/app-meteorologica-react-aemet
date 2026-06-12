@@ -1,4 +1,5 @@
 import {useState} from 'react';
+import './App.css';
 
 function App(){
 
@@ -56,7 +57,7 @@ function App(){
       {error && <p>{error}</p>}
 
       {datosTiempo && (
-        <section>
+        <section className="resultados">
           <h2>
             {datosTiempo.municipio} ({datosTiempo.provincia})
           </h2>
@@ -64,8 +65,8 @@ function App(){
           <h3>Predicción semanal</h3>
 
           {datosTiempo.prediccion.map((dia, index) => (
-            <article key={index}>
-              <h4>{dia.fecha}</h4>
+            <article key={index} className="tarjeta-tiempo">
+              <h4>{new Date(dia.fecha).toLocaleDateString('es-ES')}</h4>
 
               <p>Temperatura máxima: {dia.temperaturaMaxima} ºC</p>
               <p>Temperatura mínima: {dia.temperaturaMinima} ºC</p>
