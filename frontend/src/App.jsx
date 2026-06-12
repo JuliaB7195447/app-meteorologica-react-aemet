@@ -1,5 +1,7 @@
 import {useState} from 'react';
 import './App.css';
+import Buscador from './components/Buscador';
+import TarjetaTiempo from './components/TarjetaTiempo';
 
 function App(){
 
@@ -51,13 +53,11 @@ function App(){
 
       <p>Consulta del tiempo en un municipio</p>
 
-      <form onSubmit={buscarTiempo}>
-        <label htmlFor="codigo">Código de municipio:</label>
-
-        <input type="text" id="codigo" value={codigoMunicipio} onChange={(e) => setCodigoMunicipio(e.target.value)} />
-
-        <button type="submit">Buscar</button>
-      </form>
+      <Buscador
+        codigoMunicipio={codigoMunicipio}
+        setCodigoMunicipio={setCodigoMunicipio}
+        buscarTiempo={buscarTiempo}
+      />
 
       {cargando && <p>Cargando datos...</p>}
 
@@ -72,15 +72,10 @@ function App(){
           <h3>Predicción semanal</h3>
 
           {datosTiempo.prediccion.map((dia, index) => (
-            <article key={index} className="tarjeta-tiempo">
-              <h4>{new Date(dia.fecha).toLocaleDateString('es-ES')}</h4>
-
-              <p>Temperatura máxima: {dia.temperaturaMaxima} ºC</p>
-              <p>Temperatura mínima: {dia.temperaturaMinima} ºC</p>
-              <p>Estado del cielo: {dia.estadoCielo}</p>
-              <p>Probabilidad de lluvia: {dia.probPrecipitacion}%</p>
-              <p>Viento: {dia.vientoDireccion} - {dia.vientoVelocidad} km/h</p>
-            </article>
+            <TarjetaTiempo
+              key={index}
+              dia={dia}
+            />
           ))}
         </section>
       )}
