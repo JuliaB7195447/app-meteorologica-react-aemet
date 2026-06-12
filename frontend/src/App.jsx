@@ -17,6 +17,13 @@ function App(){
     return;
   }
 
+  //comprobar que codigo solo tiene números
+  if(!/^\d+$/.test(codigoMunicipio)) {
+    setError('Introduce un código de municipio válido');
+    setDatosTiempo(null);
+    return;
+  }
+
   try{
     setCargando(true);
     setError('');
